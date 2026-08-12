@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroOrder — Live Search Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0e14;
+    --bg-2:#080a0f;
+    --panel:#12161f;
+    --panel-2:#161b26;
+    --line: rgba(255,255,255,0.09);
+    --line-2: rgba(255,255,255,0.15);
+    --ink:#e9edf5;
+    --muted:#8891a3;
+    --amber:#ffb020;
+    --amber-dim: #7a5a1c;
+    --cyan:#4cd4e8;
+    --red:#ff5a5f;
+    --yellow:#ffd23f;
+    --green:#43d17a;
+    --font-pixel: 'Press Start 2P', monospace;
+    --font-ui: 'Space Grotesk', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(255,176,32,0.08), transparent 60%),
+      radial-gradient(900px 500px at 100% 10%, rgba(76,212,232,0.07), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-ui);
+    min-height:100vh;
+    padding: 28px 20px 60px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+
+  /* ---------- Marquee header ---------- */
+  .marquee{
+    text-align:center;
+    margin: 6px auto 30px;
+    max-width: 1180px;
+  }
+  .marquee .eyebrow{
+    font-family:var(--font-mono);
+    letter-spacing: 0.25em;
+    font-size: 11px;
+    color: var(--cyan);
+    text-transform:uppercase;
+    margin-bottom:14px;
+  }
+  .marquee h1{
+    font-family: var(--font-pixel);
+    font-size: clamp(26px, 5vw, 52px);
+    line-height:1.3;
+    margin:0;
+    color: var(--amber);
+    text-shadow:
+      0 0 6px rgba(255,176,32,0.55),
+      0 0 26px rgba(255,176,32,0.28),
+      0 3px 0 #5c3d0c;
+    letter-spacing: 2px;
+  }
+  .marquee .sub{
+    margin-top:16px;
+    font-size:15px;
+    color: var(--muted);
+    max-width: 620px;
+    margin-left:auto;
+    margin-right:auto;
+    line-height:1.6;
+  }
+  .marquee .sub b{ color:var(--ink); font-weight:600; }
+  .bulb-rail{
+    display:flex; justify-content:center; gap:6px; margin-top:18px;
+  }
+  .bulb{
+    width:6px;height:6px;border-radius:50%;
+    background: var(--amber);
+    box-shadow: 0 0 6px 1px rgba(255,176,32,0.8);
+    animation: twinkle 1.8s ease-in-out infinite;
+  }
+  .bulb:nth-child(odd){ animation-delay: 0.4s; }
+  .bulb:nth-child(3n){ animation-delay: 0.9s; background:var(--cyan); box-shadow:0 0 6px 1px rgba(76,212,232,0.8);}
+  @keyframes twinkle{ 0%,100%{opacity:0.25;} 50%{opacity:1;} }
+
+  /* ---------- Layout ---------- */
+  .stage{
+    max-width: 1180px;
+    margin: 0 auto;
+    display:grid;
+    grid-template-columns: minmax(0,440px) minmax(0,1fr);
+    gap: 22px;
+    align-items:start;
+  }
+  @media (max-width: 880px){
+    .stage{ grid-template-columns: 1fr; }
+  }
+
+  .panel{
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 18px 20px;
+    position:relative;
+  }
+  .panel-title{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color: var(--muted);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .panel-title .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--cyan);
+    box-shadow:0 0 6px var(--cyan);
+  }
+
+  /* ---------- Cabinet / board ---------- */
+  .cabinet{
+    text-align:center;
+  }
+  .status-line{
+    font-family: var(--font-mono);
+    font-size: 13px;
+    min-height: 20px;
+    margin-bottom: 14px;
+    color: var(--ink);
+  }
+  .status-line .tag{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:5px;
+    font-size:10px;
+    letter-spacing:0.08em;
+    margin-right:8px;
+    text-transform:uppercase;
+  }
+  .tag.p1{ background: rgba(255,90,95,0.18); color:var(--red); border:1px solid rgba(255,90,95,0.4);}
+  .tag.p2{ background: rgba(255,210,63,0.18); color:var(--yellow); border:1px solid rgba(255,210,63,0.4);}
+  .tag.think{ background: rgba(76,212,232,0.15); color:var(--cyan); border:1px solid rgba(76,212,232,0.4); }
+
+  .board-bezel{
+    background: linear-gradient(160deg, #1c2130, #0e111a 60%);
+    border-radius: 18px;
+    padding: 14px;
+    border: 1px solid var(--line-2);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.04), 0 20px 40px -20px rgba(0,0,0,0.7);
+    display:inline-block;
+    position:relative;
+  }
+  .board{
+    display:flex;
+    gap: 6px;
+    background: #060810;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .col{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    cursor: default;
+    border-radius:8px;
+    padding: 2px;
+    transition: background 0.15s ease;
+  }
+  .col.clickable{ cursor:pointer; }
+  .col.clickable:hover{ background: rgba(76,212,232,0.08); }
+  .col.clickable:hover .cell::after{ box-shadow: 0 0 0 2px rgba(76,212,232,0.35) inset; }
+  .cell{
+    width: 44px; height:44px;
+    border-radius:50%;
+    background: #0a0d16;
+    box-shadow: inset 0 3px 6px rgba(0,0,0,0.7), inset 0 -1px 0 rgba(255,255,255,0.04);
+    position:relative;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .cell::after{
+    content:'';
+    position:absolute; inset:0; border-radius:50%;
+    pointer-events:none;
+    transition: box-shadow 0.15s ease;
+  }
+  @media (max-width:400px){ .cell{width:36px;height:36px;} }
+  .piece{
+    width:78%;height:78%;border-radius:50%;
+    animation: dropIn 0.5s cubic-bezier(.2,.9,.3,1.35);
+  }
+  .piece.p1{ background: radial-gradient(circle at 32% 28%, #ff9195, var(--red) 65%); box-shadow:0 0 10px rgba(255,90,95,0.55);}
+  .piece.p2{ background: radial-gradient(circle at 32% 28%, #ffe89a, var(--yellow) 65%); box-shadow:0 0 10px rgba(255,210,63,0.55);}
+  .piece.win{ animation: dropIn 0.5s cubic-bezier(.2,.9,.3,1.35), pulseWin 0.9s ease-in-out infinite 0.5s; }
+  @keyframes dropIn{ from{ transform: translateY(-320px) scale(0.9); } to{ transform: translateY(0) scale(1);} }
+  @keyframes pulseWin{ 0%,100%{ filter:brightness(1);} 50%{ filter:brightness(1.6);} }
+
+  .col-indicator{
+    font-family:var(--font-mono);
+    font-size:10px;
+    color:var(--muted);
+    text-align:center;
+    margin-bottom:4px;
+  }
+
+  .win-banner{
+    margin-top:16px;
+    font-family:var(--font-pixel);
+    font-size: 14px;
+    padding: 12px;
+    border-radius:10px;
+    display:none;
+    letter-spacing:1px;
+  }
+  .win-banner.show{ display:block; animation: bannerPop 0.4s ease; }
+  @keyframes bannerPop{ from{ transform:scale(0.85); opacity:0;} to{ transform:scale(1); opacity:1; } }
+  .win-banner.p1{ background: rgba(255,90,95,0.14); color:var(--red); border:1px solid rgba(255,90,95,0.4); text-shadow:0 0 10px rgba(255,90,95,0.6);}
+  .win-banner.p2{ background: rgba(255,210,63,0.14); color:var(--yellow); border:1px solid rgba(255,210,63,0.4); text-shadow:0 0 10px rgba(255,210,63,0.6);}
+  .win-banner.draw{ background: rgba(140,150,170,0.14); color:var(--ink); border:1px solid var(--line-2); }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    margin-top:18px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    text-align:left;
+  }
+  .row-flex{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .seg{
+    display:flex; background:var(--bg-2); border-radius:8px; padding:3px; border:1px solid var(--line);
+  }
+  .seg button{
+    font-family:var(--font-ui); font-weight:600; font-size:12.5px;
+    border:none; background:transparent; color:var(--muted);
+    padding:7px 12px; border-radius:6px; cursor:pointer; transition: all 0.15s ease;
+  }
+  .seg button.active{ background: var(--amber); color:#241a05; }
+
+  .btn{
+    font-family:var(--font-ui); font-weight:600; font-size:12.5px;
+    border:1px solid var(--line-2); background: var(--panel-2); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer; transition: all 0.15s ease;
+  }
+  .btn:hover{ border-color: var(--cyan); color:var(--cyan); }
+  .btn.primary{ background: var(--cyan); color:#062026; border-color:var(--cyan); }
+  .btn.primary:hover{ filter:brightness(1.08); color:#062026;}
+  .btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  .btn:disabled:hover{ border-color:var(--line-2); color:var(--ink); }
+
+  label.field{
+    display:flex; flex-direction:column; gap:6px; font-size:11px; color:var(--muted);
+    font-family:var(--font-mono); flex:1; min-width:140px;
+  }
+  input[type=range]{ accent-color: var(--cyan); width:100%; }
+  .field .val{ color:var(--cyan); }
+
+  /* ---------- Telemetry ---------- */
+  .telemetry-grid{
+    display:grid;
+    gap:16px;
+  }
+  .agree-banner{
+    font-family:var(--font-mono);
+    font-size:12px;
+    padding:10px 14px;
+    border-radius:9px;
+    display:flex; align-items:center; gap:10px;
+    background: rgba(67,209,122,0.09);
+    border:1px solid rgba(67,209,122,0.35);
+    color: var(--green);
+  }
+  .agree-banner.tie{
+    background: rgba(255,176,32,0.09);
+    border:1px solid rgba(255,176,32,0.35);
+    color: var(--amber);
+  }
+  .agree-banner .icon{ font-size:15px; }
+
+  .race-row{
+    display:grid;
+    grid-template-columns: 118px 1fr 96px;
+    align-items:center;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .race-row:last-child{ border-bottom:none; }
+  .race-name{
+    font-size:12.5px; font-weight:600;
+  }
+  .race-name .sub{ display:block; font-family:var(--font-mono); font-size:9.5px; color:var(--muted); font-weight:400; margin-top:2px;}
+  .race-track{
+    height: 16px;
+    background: var(--bg-2);
+    border-radius:5px;
+    overflow:hidden;
+    border:1px solid var(--line);
+    position:relative;
+  }
+  .race-fill{
+    height:100%;
+    width:0%;
+    border-radius:5px;
+    transition: width 0.7s cubic-bezier(.2,.7,.2,1);
+  }
+  .race-fill.noorder{ background: linear-gradient(90deg,#5a6072,#7b8299); }
+  .race-fill.killer{ background: linear-gradient(90deg,#c9821f,var(--amber)); }
+  .race-fill.history{ background: linear-gradient(90deg,#3aa6b8,var(--cyan)); }
+  .race-fill.neuro{ background: linear-gradient(90deg,#e0433f,var(--red)); box-shadow:0 0 10px rgba(255,90,95,0.5); }
+  .race-count{
+    font-family: var(--font-mono);
+    font-size: 15px;
+    text-align:right;
+    font-weight:700;
+    font-variant-numeric: tabular-nums;
+  }
+  .race-count .ms{ display:block; font-size:9.5px; color:var(--muted); font-weight:400; text-align:right;}
+  .badge-fast{
+    font-size:9px; font-family:var(--font-mono); color:var(--green);
+    border:1px solid rgba(67,209,122,0.5); padding:1px 5px; border-radius:4px; margin-left:6px;
+  }
+
+  .brain-row{
+    display:grid; grid-template-columns: 52px 1fr 60px;
+    align-items:center; gap:10px; padding:5px 0;
+  }
+  .brain-col-label{
+    font-family:var(--font-mono); font-size:11px; color:var(--muted);
+  }
+  .brain-track{
+    height:10px; background:var(--bg-2); border-radius:4px; overflow:hidden; border:1px solid var(--line);
+  }
+  .brain-fill{ height:100%; background: linear-gradient(90deg,#e0433f,var(--red)); width:0%; transition: width 0.6s ease;}
+  .brain-fill.best{ background: linear-gradient(90deg, #ffd23f, var(--amber)); box-shadow:0 0 8px rgba(255,176,32,0.6);}
+  .brain-score{ font-family:var(--font-mono); font-size:11px; text-align:right; color:var(--muted);}
+
+  .leaderboard-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:8px 0; border-bottom:1px dashed var(--line); font-size:13px;
+  }
+  .leaderboard-row:last-child{ border-bottom:none;}
+  .leaderboard-row .lname{ font-weight:600; }
+  .leaderboard-row .lval{ font-family:var(--font-mono); color:var(--cyan); font-size:12.5px;}
+  .leaderboard-row .lspeed{ font-family:var(--font-mono); font-size:10.5px; color:var(--muted); margin-left:8px;}
+  .rank1 .lname::before{ content:"🏆 "; }
+
+  .log-feed{
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    line-height:1.65;
+    color: var(--muted);
+    max-height: 220px;
+    overflow-y:auto;
+    padding-right:6px;
+  }
+  .log-feed::-webkit-scrollbar{ width:6px; }
+  .log-feed::-webkit-scrollbar-thumb{ background: var(--line-2); border-radius:3px; }
+  .log-entry{
+    padding:8px 0; border-bottom:1px solid var(--line);
+  }
+  .log-entry:first-child{ color: var(--ink); }
+  .log-entry .lt{ color: var(--cyan); }
+  .log-entry .lg{ color: var(--green); }
+  .log-entry .la{ color: var(--amber); }
+
+  footer{
+    max-width:1180px; margin: 34px auto 0; text-align:center;
+    font-family:var(--font-mono); font-size:11px; color:var(--muted);
+    letter-spacing:0.04em;
+  }
+  footer b{ color:var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="marquee">
+  <div class="eyebrow">CSE366 · Artificial Intelligence · Live Demo</div>
+  <h1>NEURO&shy;ORDER</h1>
+  <div class="bulb-rail">
+    <div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div>
+  </div>
+  <p class="sub">Four ways to search the same Connect‑4 game tree — <b>No Ordering</b>, <b>Killer‑Move</b>, <b>History Heuristic</b>, and a trained neural net, <b>NeuroOrder</b>. Alpha‑beta pruning guarantees they all land on the same move. Watch how many nodes each one had to visit to get there.</p>
+</div>
+
+<div class="stage">
+
+  <!-- LEFT: BOARD -->
+  <div class="panel cabinet">
+    <div class="panel-title"><span class="dot"></span> GAME · 6×6 CONNECT FOUR</div>
+
+    <div class="status-line" id="statusLine">Your turn — drop a piece.</div>
+
+    <div class="board-bezel">
+      <div class="board" id="board"></div>
+    </div>
+
+    <div class="win-banner" id="winBanner"></div>
+
+    <div class="controls">
+      <div class="row-flex">
+        <div class="seg" id="modeSeg">
+          <button class="active" data-mode="human">You vs AI</button>
+          <button data-mode="auto">AI vs AI (auto)</button>
+        </div>
+      </div>
+
+      <div class="row-flex" id="autoControls" style="display:none;">
+        <button class="btn primary" id="playPauseBtn">▶ Play</button>
+        <button class="btn" id="stepBtn">Step ▸</button>
+        <label class="field" style="max-width:140px;">
+          Speed <span class="val" id="speedVal">1.0s / move</span>
+          <input type="range" id="speedSlider" min="300" max="2500" value="1000" step="100">
+        </label>
+      </div>
+
+      <div class="row-flex">
+        <label class="field">
+          Search depth (ply) <span class="val" id="depthVal">5</span>
+          <input type="range" id="depthSlider" min="3" max="7" value="5" step="1">
+        </label>
+        <button class="btn" id="resetBtn">↺ Reset game</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: TELEMETRY -->
+  <div class="telemetry-grid">
+
+    <div class="panel">
+      <div class="panel-title"><span class="dot"></span> SEARCH RACE — THIS MOVE</div>
+      <div class="agree-banner" id="agreeBanner">Waiting for the first AI move…</div>
+      <div style="height:12px;"></div>
+      <div id="raceRows"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><span class="dot"></span> NEUROORDER'S BRAIN — predicted score per column</div>
+      <div id="brainRows" style="font-size:12px;color:var(--muted);font-family:var(--font-mono);">No prediction yet — make a move to see the network rank columns.</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><span class="dot"></span> CUMULATIVE LEADERBOARD — total nodes this game</div>
+      <div id="leaderboard" style="font-family:var(--font-mono); font-size:12px; color:var(--muted);">No searches run yet this game.</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><span class="dot"></span> COMMENTARY LOG</div>
+      <div class="log-feed" id="logFeed"></div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  Built by <b>Tamim</b> · <b>Jakaria</b> · <b>Abrar</b> · <b>Razwan</b> — NeuroOrder, CSE366 Section 2, East West University
+</footer>
+
+<script>
+"use strict";
+/* =========================================================
+   ENGINE — direct port of game_engine.py / features.py /
+   neuroorder_ordering.py, verified node-for-node against
+   the Python reference implementation.
+   ========================================================= */
+const ROWS = 6, COLS = 6, WIN_LENGTH = 4, WIN_SCORE = 100000;
+
+function createBoard(){ return Array.from({length:ROWS}, () => Array(COLS).fill(0)); }
+function cloneBoard(b){ return b.map(r => r.slice()); }
+function getValidMoves(b){ const out=[]; for(let c=0;c<COLS;c++) if(b[0][c]===0) out.push(c); return out; }
+function makeMove(b, col, player){
+  const nb = cloneBoard(b);
+  for(let r=ROWS-1;r>=0;r--){ if(nb[r][col]===0){ nb[r][col]=player; return nb; } }
+  throw new Error("Column "+col+" is already full");
+}
+function countDirection(b,r,c,dr,dc,player){
+  let count=0; r+=dr;c+=dc;
+  while(r>=0&&r<ROWS&&c>=0&&c<COLS&&b[r][c]===player){ count++; r+=dr;c+=dc; }
+  return count;
+}
+function checkWinner(b){
+  const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const p=b[r][c]; if(p===0) continue;
+    for(const [dr,dc] of dirs) if(countDirection(b,r,c,dr,dc,p) >= WIN_LENGTH-1) return p;
+  }
+  if(getValidMoves(b).length===0) return 0;
+  return null;
+}
+function getWinningCells(b){
+  const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const p=b[r][c]; if(p===0) continue;
+    for(const [dr,dc] of dirs){
+      const cells=[[r,c]]; let rr=r+dr, cc=c+dc;
+      while(rr>=0&&rr<ROWS&&cc>=0&&cc<COLS&&b[rr][cc]===p){ cells.push([rr,cc]); rr+=dr; cc+=dc; }
+      if(cells.length>=WIN_LENGTH) return {player:p, cells:cells.slice(0,WIN_LENGTH)};
+    }
+  }
+  return null;
+}
+function evaluate(b){
+  const center=Math.floor(COLS/2); let s=0;
+  for(const row of b){ if(row[center]===1) s+=3; else if(row[center]===2) s-=3; }
+  return s;
+}
+function _minimax(board, depth, alpha, beta, player, orderingFn, onCutoff){
+  let nodes=1;
+  const winner = checkWinner(board);
+  if(winner!==null){
+    if(winner===0) return {move:null, nodes, score:0};
+    const score = winner===1 ? WIN_SCORE+depth : -(WIN_SCORE+depth);
+    return {move:null, nodes, score};
+  }
+  if(depth===0) return {move:null, nodes, score: evaluate(board)};
+  let moves = getValidMoves(board);
+  if(moves.length===0) return {move:null, nodes, score:0};
+  if(orderingFn) moves = orderingFn(board, moves, player);
+  let bestMove = moves[0];
+  const opponent = player===1?2:1;
+  const maximizing = player===1;
+  let bestScore = maximizing ? -Infinity : Infinity;
+  for(const move of moves){
+    const child = makeMove(board, move, player);
+    const res = _minimax(child, depth-1, alpha, beta, opponent, orderingFn, onCutoff);
+    nodes += res.nodes;
+    if(maximizing){
+      if(res.score>bestScore){ bestScore=res.score; bestMove=move; }
+      alpha = Math.max(alpha, bestScore);
+    } else {
+      if(res.score<bestScore){ bestScore=res.score; bestMove=move; }
+      beta = Math.min(beta, bestScore);
+    }
+    if(beta<=alpha){ if(onCutoff) onCutoff(depth, move, player); break; }
+  }
+  return {move:bestMove, nodes, score:bestScore};
+}
+function minimaxAb(board, depth, alpha, beta, player, orderingFn, onCutoff){
+  const r = _minimax(board, depth, alpha, beta, player, orderingFn||null, onCutoff||null);
+  return {move:r.move, nodes:r.nodes};
+}
+class KillerMoveHeuristic{
+  constructor(maxPerDepth=2){ this.killers=new Map(); this.maxPerDepth=maxPerDepth; }
+  order(board, moves){
+    const all=[];
+    for(const lst of this.killers.values()) for(const m of lst) if(!all.includes(m)) all.push(m);
+    const ordered = all.filter(m=>moves.includes(m));
+    for(const m of moves) if(!ordered.includes(m)) ordered.push(m);
+    return ordered;
+  }
+  record(depth, move){
+    let lst=this.killers.get(depth); if(!lst){ lst=[]; this.killers.set(depth,lst); }
+    const i=lst.indexOf(move); if(i!==-1) lst.splice(i,1);
+    lst.unshift(move); if(lst.length>this.maxPerDepth) lst.pop();
+  }
+  reset(){ this.killers.clear(); }
+}
+class HistoryHeuristic{
+  constructor(){ this.table=new Map(); }
+  order(board, moves){ return moves.slice().sort((a,b)=>(this.table.get(b)||0)-(this.table.get(a)||0)); }
+  record(depth, move){ this.table.set(move, (this.table.get(move)||0) + depth*depth); }
+  reset(){ this.table.clear(); }
+}
+
+/* ---------------- features.py ---------------- */
+function countPieces(b, player){ let n=0; for(const row of b) for(const cell of row) if(cell===player) n++; return n; }
+function pieceDifference(b, player){ const opp=player===1?2:1; return countPieces(b,player)-countPieces(b,opp); }
+function centerControl(b, player){ const center=Math.floor(COLS/2); let s=0; for(const row of b) if(row[center]===player) s++; return s; }
+function analyzeWindow(w, player){ const opp=player===1?2:1; let p=0,o=0,e=0; for(const v of w){ if(v===player)p++; else if(v===opp)o++; else e++; } return [p,o,e]; }
+function playerThreats(b, player){
+  let threat=0;
+  for(let r=0;r<ROWS;r++) for(let c=0;c<=COLS-4;c++){ const w=[0,1,2,3].map(i=>b[r][c+i]); const [p,,e]=analyzeWindow(w,player); if(p===3&&e===1) threat++; }
+  for(let c=0;c<COLS;c++) for(let r=0;r<=ROWS-4;r++){ const w=[0,1,2,3].map(i=>b[r+i][c]); const [p,,e]=analyzeWindow(w,player); if(p===3&&e===1) threat++; }
+  for(let r=0;r<=ROWS-4;r++) for(let c=0;c<=COLS-4;c++){ const w=[0,1,2,3].map(i=>b[r+i][c+i]); const [p,,e]=analyzeWindow(w,player); if(p===3&&e===1) threat++; }
+  for(let r=3;r<ROWS;r++) for(let c=0;c<=COLS-4;c++){ const w=[0,1,2,3].map(i=>b[r-i][c+i]); const [p,,e]=analyzeWindow(w,player); if(p===3&&e===1) threat++; }
+  return threat;
+}
+function opponentThreats(b, player){ return playerThreats(b, player===1?2:1); }
+function mobility(b){ return getValidMoves(b).length; }
+function extractFeatures(board, move, player){
+  const nb = makeMove(board, move, player);
+  return [ pieceDifference(nb,player), centerControl(nb,player), playerThreats(nb,player), opponentThreats(nb,player), mobility(nb) ];
+}
+
+/* ---------------- trained NeuroOrder model (StandardScaler + MLPRegressor(32,16), relu, identity out) ---------------- */
+const MODEL_WEIGHTS = {"scaler_mean": [0.5128995736821924, 2.076517126450082, 0.39297018044201826, 0.3289340239727193, 5.111019600636187], "scaler_scale": [0.4998335733009716, 1.039934744719854, 0.8085169509136713, 0.7423640427853923, 1.2385178185171717], "coefs": [[[-0.11855165940297598, 0.39709557336641654, 0.18649565633098023, 0.06697476760507223, -0.05295007430621741, -1.5345862951665442e-227, -0.2660627871988217, 0.09249226161259204, 0.07590980776145442, 0.15521926155992444, -0.4055045114030411, 0.5632029865538305, 0.18538807558546824, 0.17311296364687495, -3.93959745e-316, -0.06753340934292988, -0.04608299292397849, 0.056452397899842285, 0.057695350824102154, -0.031043451097951254, -0.11916693053219482, -0.15561491620439932, -0.28174524400866335, -0.2310899382684576, -0.08171419929128852, 0.3107893625760617, -0.00011913369906399603, 0.06770815673629738, -0.1919369257829207, -0.6086023190722999, 0.007591535561080526, -0.3249963122529434], [-0.7899444640221902, 0.4048788003008961, 0.43354802452109437, 0.33211416275977557, -0.1551153512597283, -1.981061390701512e-228, 0.28208996452203783, 0.025970900675302545, -0.02883085926868586, 0.2781602746457985, -0.43949006042173955, 0.4191928656225599, -0.3394138394827385, 0.1275065914073753, 1.7220596e-316, -0.00382533913719032, 0.027386187422482233, -0.055003815921449636, 0.16753781912413493, 0.3430906051254924, 0.31255878729586517, 0.019695713704312518, 0.06105488439674992, 0.4674242989560923, -0.4255959429029882, -0.3744978886789016, -0.7442176259390476, -0.25500975308963286, -0.16087899286565752, 0.33624753735001917, 0.002173436024693746, 0.14695628290420143], [-0.08718955506975042, 0.08000410144241764, -0.35058414173216934, 0.3978503025077758, -0.005951227725000653, 1.329533394099246e-174, 0.3055062757383821, -0.030018307346293963, -0.34475456587057807, 0.21031159076299652, 0.009041128895897511, 0.14684640323845896, 0.18253892843987748, -0.5372276308364433, -3.29155545e-316, -0.806965613748425, 0.14674880422762066, 0.03704920074231847, -0.30347130464265304, -0.5200468352824043, -0.14761713001376486, -0.4224709787340523, 0.05303665375256042, 0.13587205250684573, 0.19143575465702647, -0.028228938639171072, 0.033866922057129274, -0.34363043050118686, 0.28181375361449945, 0.0746612628600356, 0.001257925348256157, 0.24031307772754124], [0.1265989645761963, -0.20002644751940202, -0.7808193007315253, -0.3901136663491734, -0.5765747901612472, 3.229729801952772e-203, -0.09269551180869967, -0.018852267619779782, 0.5575819480370114, -0.8284612852397853, -0.18780871121675355, 0.15669429819360817, -0.6836533428193318, -0.4065192216731433, -5.4333526e-317, -0.6822143316310556, 0.1480980420196022, 0.27073133732434435, 0.20667508131613188, 0.08117636042231198, 0.25893811940371225, -0.20583026183205855, 0.3128915945651076, -0.11555975342123366, 0.17874524200260866, 0.2080502003082564, 0.02505181476498999, -0.22762703319396166, -0.28851093813916584, -0.6304997998520611, 0.39850725773007845, 0.22741684989243258], [-0.4558497914581362, 0.0879709644483165, 0.12160288746456684, -0.11921051536574186, -0.48053502943176185, 2.372673779773653e-205, 0.9742925935336949, -0.572332323554511, 0.26899340019187606, 0.24387219748919334, -0.34005961433014853, 0.535172608238795, 0.6482169192921262, -0.13795919543515717, -2.1763479e-316, -0.23024372195145776, 0.053888554947734243, -0.2814487884962128, 0.0746473529873507, 0.2515524735738049, -0.2726543161304257, -0.22522767671946112, 0.6206854919845756, -0.08141681913348195, -0.2560551950309421, 0.02812084254261744, 0.11328975235779751, -0.3290046013282651, 0.17886578024205257, 0.21326021921187308, 0.022464317256484095, 0.4135128080349389]], [[0.25261570121481675, 0.289900802181651, 0.1671785151016629, -0.3635904131711148, 0.24443389520582495, 1.9461568e-316, 0.4565772551696152, -0.4919822936136656, -0.023169693125612206, -0.5426085604450827, -0.10294634456211056, -0.39483935974811696, -0.3527716690746365, 0.11149964744950129, 0.07414277447571611, 0.16778863270761027], [-0.21299939009565652, -0.37109408976292657, -0.361656034938399, -0.007475436523365889, 0.23105378895451517, 1.50107904e-316, 0.0642561179103679, -0.1981856482328456, -0.1640065567741665, 0.261683895454072, 0.17189968549513937, 0.13614375332672127, 0.09942347168990648, 0.009537568464998696, -0.1576296651192042, 0.1726815367238229], [0.02123635690344507, -0.44138153821937187, -0.02250298374287024, -0.3386866106244027, 0.4990429971434565, -6.3079214e-317, -0.31876670827058684, -0.015820625058651956, 6.375477939535593e-131, -0.07306955068244997, -0.4954694188111372, 0.26465193294311345, -0.16768214541594587, -0.28698349667772854, -0.0773600605554124, -0.1480833164187258], [0.2436710562571139, 0.18122145755973953, 0.2500757903367805, -0.04891213113759468, -0.07947624348418456, 6.8599893e-317, -0.33191368261619464, 0.04206518320058305, 0.21972587559938425, 0.19469513757201357, -0.5340379892920774, 0.11826345471608274, 0.31673079054810827, -0.1837202797137214, -0.23251100588602439, 0.2843598475951371], [0.4076204533159118, 0.003098713121005919, 0.06931913035149713, -0.15636165127894605, -0.15354717817931718, -4.02938306e-316, 0.0862660040292835, -0.002684194642832191, -0.09501613566098988, 0.07562304536866407, 0.12628006202736358, 0.42373614476041394, 0.008543646779668432, 0.10200590979725795, -0.1280601537241911, 0.37230444538034235], [-2.3986236481992104e-211, -1.7743800055410323e-255, 5.231919943440414e-243, 1.3793070423460283e-257, -6.864432189558827e-263, 2.7711752e-316, 2.048184276527181e-278, -2.512752856743558e-283, 1.585981183492795e-272, 1.1441098257558803e-260, 2.5933136e-316, -7.24534652825375e-305, 1.8439655957971198e-252, 1.74295367e-316, 5.7495859101878125e-275, 5.6460883967021696e-232], [-2.20560795e-316, 0.16351523849487515, 0.3542029400912212, -0.13424006104545927, 0.7104459292025944, -1.9286725e-316, -0.31575247757683184, -0.3870793062355189, 0.35658801916809885, 0.021231254008688655, 0.2532676752279414, -0.2684735236907251, 0.29944313587813837, 0.211771755867704, 0.0358203699006549, -0.32827020720257943], [0.6268511717886189, -0.47812146259819344, 0.2595786600351171, -0.7372987844542779, -0.5850981736734034, 7.1622266e-317, -0.10024616654378346, 0.10416043310784959, -0.2765601834547912, 0.5533763398230697, 0.7696999196788732, 0.008964876794602374, -0.2629051751749186, -0.10043660853094798, -0.5077094666764483, 0.5082594459227704], [0.07809100612575565, 0.13819403367537064, 0.13401423972723703, -0.4545376551534865, -0.4916616940504758, 4.054212e-317, 0.19089737054200456, -0.19994186809184283, -0.08108099964736938, -0.0539223902893434, -0.087194251525913, 0.0942491490286272, -0.008845973949273354, -0.24287303279914468, -0.328303245958082, -0.33052240650322023], [0.06777992186689531, 0.016298199005328085, -0.6360091753953769, -0.3705107909167031, 0.3603878988364323, 6.179026e-317, -0.20286960749838698, -0.05962295450753699, -0.3165303203675776, 0.08970467058006507, 0.007394418978125899, 0.05816430241356954, 0.029867475765530675, 0.09658191377023631, 0.18933869660140945, 0.37091219505460143], [0.13549828513960194, -0.18168319451279002, -0.1530007166758218, -0.03951747667362881, -0.13841946816041303, -1.2767378e-316, 0.5087931173378262, 0.0926510329221642, -0.10481406690100072, -0.19937006437507085, -0.5238079860101912, -0.17961454310240632, -0.25860182118979474, -0.37459960624816174, 0.21863309437306558, 0.28935493939662077], [-0.018593687973533914, -0.20900892480556774, 0.04283492746782267, -0.20235187857458822, -0.320324159729194, 2.6676056e-316, -0.2864178666069669, 0.1815329382716969, -0.006382348521752313, -0.07752795848140401, -0.03696872826872981, -0.4394385042938751, -0.11729040735719792, 0.2471353992389207, 0.2813742728906997, 0.6749194574449282], [-3.9508626e-317, -0.08479846773677864, -0.3864043157899258, -0.6615802120633276, 0.379417566323052, -1.9340624e-316, -0.06407863905202542, -0.011485718646315762, -0.029152787446019644, 0.41562548265029675, -0.14582284803715884, 0.38104238372377347, 0.3410910887917391, -0.09486126964610068, -0.08659664687086135, 0.38899255783563313], [-0.6195467358636187, -0.0893603227671941, 2.9375515e-316, -0.1640699983891892, 0.0758483208174813, 1.68591097e-316, -0.1404626903404889, -0.010152428629188637, -6.890397694611268e-306, -0.028540043430990595, -0.02732522804401182, 0.14496537475655744, 0.30057399935387474, -0.09433408407475379, -0.247134755444261, -0.09965259645128029], [8.178983e-317, -1.1807546e-316, 3.32565976e-316, -3.8355181e-316, 9.478567e-317, -4.1298388e-316, 4.0694361e-316, -1.3376682e-316, -3.495414e-317, 1.36259896e-316, 4.827e-317, 1.0794982e-316, -3.4432722e-316, -1.31286755e-316, -6.2746974e-317, -6.1387587e-317], [-0.8728475282899865, -0.30298591329549446, 0.005838405831026527, -0.025915886680412083, -0.1812016708489305, 2.19516983e-316, -0.28938339965161225, -0.020759916574638645, 3.29000285e-316, 0.33276449071089187, -0.02146640215308763, -0.08711860388911104, 0.11612111435261496, -0.0947863560088482, -0.15842038378865084, 0.41560703939871957], [0.05646352214159735, -0.10874735582263075, -0.0019727087133539624, -0.04954873072014927, -0.1254685807399708, 1.91098717e-316, -0.30889859626860006, 0.005961978280072405, 0.04504836640948073, -0.1757235277113956, -0.13407243512465952, -0.49481249748024564, -0.0008578063277584506, -0.024685210236562248, 0.20422123847622967, -0.032873601776521676], [0.34766891029389924, 0.15278884139970106, 0.14953188539297366, 0.1970240621620098, -0.12435590152071316, -1.43972626e-316, -0.35722092803126165, -0.03716493889230175, 0.14889114294960262, 0.10700556375701273, -0.009535982247288242, -0.07858404794823805, -0.4128261892484855, 0.04227043992436757, 0.38591206789380583, -0.14690439512642708], [-0.29976172469123724, 0.2996863515846207, -0.2711025959538805, 0.16993348212394005, 0.06379793385452232, 1.14096823e-316, -0.2065660071849218, -0.33304139422258217, -0.20368752507935137, 0.030092156857203706, 0.1069256782139233, 0.21861531789195368, -0.06302647194628244, -0.08112473430702737, 0.06429218924644256, -0.18006923269936384], [-2.103071439242116e-146, 0.14209847911349097, 8.5874202754717e-308, 0.226573687760878, -0.10828133627647904, 3.9126237e-316, -0.011109986962328676, -0.0035107706943431206, 2.9997455e-316, -0.19388877882416788, 0.3669741891051051, -0.13356982760992495, 0.3617333031189629, 0.15815527209525662, 0.09298594158474827, -0.13478660043860005], [0.339285429003035, 0.12916473012559512, -0.11540804499297384, -0.36317034806263937, 0.15331644702745503, -4.721007e-317, 0.16673741203629544, -0.05375712279050437, 0.04595222522199294, -0.06548650622220659, 0.34621096401910956, 0.2012865190994558, 0.43126758172200236, -0.013331776167004138, 0.10396006196068384, -0.16028904585495907], [-0.061331317453768484, 0.20523710007546642, -0.12732768052856863, 0.44486588474535865, 0.15195656957057463, 2.4631857e-316, -0.03359100666595248, 0.07394958445623383, -3.0520703366630663e-30, 0.1143355136408699, 0.023056502692757917, -0.3530637520570755, 0.2064213756316645, 0.12968859825390092, 0.11980452000076959, -0.021320896615560463], [-0.40905461328908516, -0.11911000233655984, 0.11751836537516158, 0.023743609173965265, -0.06676296956248418, 1.8650706e-317, 0.07522530698078222, 0.2940009104725293, -0.3472820991235773, -0.13999083023671188, 0.5274343880835516, -0.14543070834224905, -0.37377762774267986, -0.05680464673383555, -0.04479387072261568, 0.11306968564429053], [0.04258006979274461, -0.3076014258493033, -0.35524809261782214, -0.46389359963128013, 0.03751185754812295, 1.3904405e-317, -0.4425295499286314, -0.05359723575264688, 0.08711931804126138, -0.08860026654484829, -0.1811484079941094, -0.02171051074268059, 0.0033591973102546887, -0.0054288080007815044, 0.29789820544892376, 0.2871973730190386], [0.1358024636121596, 0.19349864693305602, -0.01748626183188955, 0.11769282269706495, -0.25196932735593475, 2.853965e-318, 0.03088868344980399, -0.09017553684906941, 0.21626772708328376, 0.27057165576015335, -0.5740117322585859, -0.4560291080456219, -0.07579342430955073, -0.24555616493585544, -0.1068794875706642, 0.13353163876026583], [-0.1465021633574789, 0.10929701992298843, 0.33461375289746637, 0.1713256839451114, 0.16848886325716778, -1.91230104e-316, -0.010192163156518582, -0.19190220591355106, -0.38955914375833295, -0.32640863718352914, -0.00529439409442111, -0.27889861150569656, -0.223263681007103, 0.23445883386824012, 0.07591924439436855, -0.18772510401354672], [-0.26927074046673494, -0.10789364918903878, 0.34211252003839265, -0.23099476005880468, 0.34989707807373066, -9.229896e-317, 0.13276397784202387, -0.007183601491177845, 0.020911586326418298, -0.2999700720641751, 0.1525939053118753, 0.13340754507089647, 0.5307811484415154, -0.2957226687372735, -0.15416927617510737, -0.05630443141525243], [-0.12524915134615824, -0.23282466322429804, -0.30954092853980375, 0.21457133572404044, 0.08168352584968222, 2.4097573e-317, 0.06773154852239656, 0.03590138097448109, 7.116164768516123e-05, 0.10704057941932314, -0.3434686887752339, 0.055809147416952545, -0.25746597279748706, -0.03615203719601109, -0.2708013690563367, -0.26828242491196214], [-0.2949706111413667, -0.07394844089891187, -0.024340959777615516, 0.3785444836735942, 0.005887120371373517, -2.1315281e-316, 0.18500942392426825, -0.016628648541565025, -0.03201565973089537, 0.02521358490330029, -0.04009305711027514, 0.1449217068778247, 0.21456300936909256, -0.2464049455698683, -0.01569232234172842, -0.1384850792503435], [-0.14068160036233643, -0.23233980751862437, 0.2508283217340696, -0.060407820302981446, 0.29045126643057145, -1.68490575e-316, -0.22409201362453568, -0.2388422974946838, -0.23198165539036025, -0.17915221083926927, -0.659491468181529, -0.08595098627171499, -0.08075454701798268, 0.004570777995489353, -0.3340790446267736, 0.5656829784193462], [0.13927105274582255, 0.05850502709492839, -0.5398671572985909, -0.08595742601635635, -0.1604658070726224, 3.81100594e-316, -0.052299033273924156, 0.13999586671464476, 0.05376922780218826, 0.0932010796125813, -0.16320095694789427, -0.4380070560176338, -0.2451690054218223, 0.14638049651078214, 0.1039309194784964, -0.24641304903158123], [-0.22791360203072217, -0.17836840141470062, 0.09808962176437049, -0.01838606323510248, -0.13565786666465476, -1.60270543e-316, 0.06856708601875741, 0.14065056830506859, -0.024343346142288644, -0.0288811284446465, -0.23984435076166208, -0.18063573075801084, -0.274439390615747, -0.3842508447491877, -0.21005970073416194, -0.40546442094018853]], [[0.9483836622253389], [-0.13383433878697784], [-0.6537344297120242], [0.32883648010686406], [0.26128778052458235], [-2.072805e-317], [-0.18215989983005434], [0.13053437247588465], [-0.33629862138379835], [-0.22205279312034143], [-0.43606303729883744], [0.2076296970688449], [0.3281300015835109], [-0.08171135186552393], [-0.11464844706632675], [0.2715206763498308]]], "intercepts": [[-0.18371603322586416, -0.0897276418368282, -0.06440083245209617, -0.1618937360366156, -0.6819918250419025, -0.20138781547267615, -0.2011852175561941, -1.2027739073531625, -0.40494593408407487, -0.31645166526353935, 0.2123761925566833, -0.4886161839262496, -0.437684825353245, -0.2961034142860041, -0.19797229972030128, -0.6175840878259564, -0.17757914091546625, -0.5371367898187605, 0.4691405067064811, -0.548588370381771, -0.37402549855127265, -0.07083222781992445, 0.3892937795244892, 0.1512995252922014, -0.32616402077860307, 0.18439740434869992, -0.18756648438718795, 0.05614121228218804, -0.06514225400924199, -0.5348065177849001, -0.4264067223522745, -0.17325997243443203], [-1.191184380662993, 0.5072843312236095, -0.3399259479264399, 0.3264211690413676, -0.22763976630405044, -0.07340636223215309, 0.2375339436282865, -0.06353642169307837, -0.4264889434422808, -0.25415062406246597, 0.02932549001733582, 0.2956285958090155, -0.23049701842787837, 0.3540866809540785, -0.1658429013738392, 0.18243773528966437], [-0.3476639957160096]], "features": ["piece_difference", "center_control", "player_threats", "opponent_threats", "mobility"]};
+
+function makeNeuroOrder(weights){
+  const { scaler_mean, scaler_scale, coefs, intercepts } = weights;
+  function relu(v){ return v>0?v:0; }
+  function forward(features){
+    let x = features.map((v,i)=>(v-scaler_mean[i])/scaler_scale[i]);
+    for(let layer=0; layer<coefs.length; layer++){
+      const W=coefs[layer], b=intercepts[layer];
+      const outDim=W[0].length;
+      const y=new Array(outDim).fill(0);
+      for(let j=0;j<outDim;j++){ let s=b[j]; for(let i=0;i<x.length;i++) s+=x[i]*W[i][j]; y[j]=s; }
+      const isLast = layer===coefs.length-1;
+      x = isLast ? y : y.map(relu);
+    }
+    return x[0];
+  }
+  function neuroorderOrdering(board, moves, player){
+    if(moves.length===0) return [];
+    const scored = moves.map(m=>[m, forward(extractFeatures(board,m,player))]);
+    scored.sort((a,b)=>b[1]-a[1]);
+    return scored.map(([m])=>m);
+  }
+  return { forward, neuroorderOrdering };
+}
+const neuro = makeNeuroOrder(MODEL_WEIGHTS);
+
+/* =========================================================
+   APPLICATION STATE + UI
+   ========================================================= */
+const killer = new KillerMoveHeuristic();
+const history = new HistoryHeuristic();
+
+const state = {
+  board: createBoard(),
+  currentPlayer: 1,
+  humanPlayer: 1,
+  mode: 'human',        // 'human' | 'auto'
+  depth: 5,
+  autoPlaying: false,
+  autoSpeed: 1000,
+  gameOver: false,
+  moveNumber: 0,
+  aiThinking: false,
+  cumulative: { noorder:0, killer:0, history:0, neuro:0, moves:0 },
+};
+
+const METHODS = [
+  { key:'noorder', label:'No Ordering', sub:'left-to-right', cls:'noorder' },
+  { key:'killer',  label:'Killer-Move', sub:'cutoff memory',  cls:'killer' },
+  { key:'history', label:'History',     sub:'score table',    cls:'history' },
+  { key:'neuro',   label:'NeuroOrder',  sub:'trained MLP',     cls:'neuro' },
+];
+
+/* ---------- DOM refs ---------- */
+const boardEl = document.getElementById('board');
+const statusLine = document.getElementById('statusLine');
+const winBanner = document.getElementById('winBanner');
+const raceRows = document.getElementById('raceRows');
+const agreeBanner = document.getElementById('agreeBanner');
+const brainRows = document.getElementById('brainRows');
+const leaderboardEl = document.getElementById('leaderboard');
+const logFeed = document.getElementById('logFeed');
+const modeSeg = document.getElementById('modeSeg');
+const autoControls = document.getElementById('autoControls');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const stepBtn = document.getElementById('stepBtn');
+const speedSlider = document.getElementById('speedSlider');
+const speedVal = document.getElementById('speedVal');
+const depthSlider = document.getElementById('depthSlider');
+const depthVal = document.getElementById('depthVal');
+const resetBtn = document.getElementById('resetBtn');
+
+/* ---------- Board rendering ---------- */
+function buildBoardDom(){
+  boardEl.innerHTML='';
+  for(let c=0;c<COLS;c++){
+    const col=document.createElement('div');
+    col.className='col';
+    col.dataset.col=c;
+    col.addEventListener('click', ()=>onColumnClick(c));
+    for(let r=0;r<ROWS;r++){
+      const cell=document.createElement('div');
+      cell.className='cell';
+      cell.id='cell-'+r+'-'+c;
+      col.appendChild(cell);
+    }
+    boardEl.appendChild(col);
+  }
+  updateClickability();
+}
+function renderBoard(winCells){
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const cellEl=document.getElementById('cell-'+r+'-'+c);
+    const v = state.board[r][c];
+    const existing = cellEl.querySelector('.piece');
+    if(v===0){ if(existing) cellEl.removeChild(existing); continue; }
+    if(!existing){
+      const piece=document.createElement('div');
+      piece.className='piece p'+v;
+      cellEl.appendChild(piece);
+    }
+  }
+  if(winCells){
+    for(const [r,c] of winCells){
+      const p = document.getElementById('cell-'+r+'-'+c).querySelector('.piece');
+      if(p) p.classList.add('win');
+    }
+  }
+}
+function updateClickability(){
+  const cols = boardEl.querySelectorAll('.col');
+  const canClick = state.mode==='human' && !state.gameOver && !state.aiThinking && state.currentPlayer===state.humanPlayer;
+  cols.forEach(col=>{
+    const c = parseInt(col.dataset.col,10);
+    const full = state.board[0][c] !== 0;
+    col.classList.toggle('clickable', canClick && !full);
+  });
+}
+
+/* ---------- Status / banner ---------- */
+function setStatus(html){ statusLine.innerHTML = html; }
+function playerTag(p){ return p===1 ? '<span class="tag p1">PLAYER 1</span>' : '<span class="tag p2">PLAYER 2 · AI</span>'; }
+
+function showWinBanner(winner){
+  winBanner.classList.remove('p1','p2','draw');
+  if(winner===0){ winBanner.textContent='DRAW GAME'; winBanner.classList.add('draw'); }
+  else{ winBanner.textContent = (winner===1?'PLAYER 1 WINS!':'PLAYER 2 (AI) WINS!'); winBanner.classList.add(winner===1?'p1':'p2'); }
+  winBanner.classList.add('show');
+}
+function hideWinBanner(){ winBanner.classList.remove('show'); }
+
+/* ---------- Race panel ---------- */
+function buildRaceRows(){
+  raceRows.innerHTML = METHODS.map(m => `
+    <div class="race-row" id="race-${m.key}">
+      <div class="race-name">${m.label}<span class="sub">${m.sub}</span></div>
+      <div class="race-track"><div class="race-fill ${m.cls}" id="fill-${m.key}"></div></div>
+      <div class="race-count"><span id="count-${m.key}">–</span><span class="ms" id="ms-${m.key}"></span></div>
+    </div>
+  `).join('');
+}
+function animateCount(el, from, to, duration){
+  const start = performance.now();
+  function step(now){
+    const t = Math.min(1, (now-start)/duration);
+    const eased = 1 - Math.pow(1-t, 3);
+    const val = Math.round(from + (to-from)*eased);
+    el.textContent = val.toLocaleString();
+    if(t<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function renderRace(results, timings){
+  const maxNodes = Math.max(...METHODS.map(m=>results[m.key].nodes), 1);
+  const minNodes = Math.min(...METHODS.map(m=>results[m.key].nodes));
+  METHODS.forEach(m=>{
+    const nodes = results[m.key].nodes;
+    const fill = document.getElementById('fill-'+m.key);
+    const countEl = document.getElementById('count-'+m.key);
+    const msEl = document.getElementById('ms-'+m.key);
+    const pct = Math.max(4, (nodes/maxNodes)*100);
+    requestAnimationFrame(()=>{ fill.style.width = pct+'%'; });
+    animateCount(countEl, 0, nodes, 750);
+    msEl.textContent = timings[m.key].toFixed(2)+' ms';
+    const row = document.getElementById('race-'+m.key);
+    let badge = row.querySelector('.badge-fast');
+    if(badge) badge.remove();
+    if(nodes===minNodes && maxNodes!==minNodes){
+      const b=document.createElement('span'); b.className='badge-fast'; b.textContent='FEWEST';
+      countEl.parentElement.appendChild(b);
+    }
+  });
+}
+
+/* ---------- Brain panel ---------- */
+function renderBrain(board, moves, player){
+  if(moves.length===0){ brainRows.innerHTML='No legal moves.'; return; }
+  const scored = moves.map(m=>[m, neuro.forward(extractFeatures(board,m,player))]);
+  const vals = scored.map(s=>s[1]);
+  const max = Math.max(...vals), min = Math.min(...vals);
+  const range = (max-min) || 1;
+  const best = scored.reduce((a,b)=> b[1]>a[1]?b:a, scored[0])[0];
+  brainRows.innerHTML = scored
+    .slice().sort((a,b)=>a[0]-b[0])
+    .map(([col,score])=>{
+      const pct = Math.max(4, ((score-min)/range)*100);
+      const isBest = col===best;
+      return `<div class="brain-row">
+        <div class="brain-col-label">Col ${col}${isBest?' ★':''}</div>
+        <div class="brain-track"><div class="brain-fill ${isBest?'best':''}" style="width:${pct}%"></div></div>
+        <div class="brain-score">${score.toFixed(1)}</div>
+      </div>`;
+    }).join('');
+}
+
+/* ---------- Leaderboard ---------- */
+function renderLeaderboard(){
+  if(state.cumulative.moves===0){ leaderboardEl.innerHTML='No searches run yet this game.'; return; }
+  const baseline = state.cumulative.noorder || 1;
+  const entries = METHODS.map(m=>({...m, total: state.cumulative[m.key]}))
+    .sort((a,b)=>a.total-b.total);
+  leaderboardEl.innerHTML = entries.map((e,i)=>`
+    <div class="leaderboard-row ${i===0?'rank1':''}">
+      <span class="lname">${e.label}</span>
+      <span><span class="lval">${e.total.toLocaleString()} nodes</span><span class="lspeed">${e.key==='noorder' ? 'baseline' : (baseline/Math.max(e.total,1)).toFixed(2)+'× faster'}</span></span>
+    </div>
+  `).join('');
+}
+
+/* ---------- Log ---------- */
+function logMove(moveNum, player, chosenMove, results, agreeCount){
+  const entry = document.createElement('div');
+  entry.className='log-entry';
+  const fastest = METHODS.reduce((a,b)=> results[b.key].nodes<results[a.key].nodes ? b : a, METHODS[0]);
+  const speedup = (results.noorder.nodes / Math.max(results.neuro.nodes,1)).toFixed(1);
+  entry.innerHTML =
+    `<span class="lt">Move ${moveNum}</span> — ${player===1?'Player 1':'Player 2 (AI)'} played column <b>${chosenMove}</b><br>`+
+    `No-Order: ${results.noorder.nodes.toLocaleString()} · Killer: ${results.killer.nodes.toLocaleString()} · History: ${results.history.nodes.toLocaleString()} · `+
+    `<span class="lg">NeuroOrder: ${results.neuro.nodes.toLocaleString()} (${speedup}× fewer than baseline)</span><br>`+
+    (agreeCount===4 ? `<span class="lg">✓ all 4 methods agreed on this move</span>` : `<span class="la">${agreeCount}/4 agreed — remaining choice(s) were tied in value</span>`);
+  logFeed.insertBefore(entry, logFeed.firstChild);
+}
+
+/* ---------- Core turn logic ---------- */
+function computeAllMethods(board, player, depth){
+  const t0 = performance.now();
+  const rNo = minimaxAb(board, depth, -Infinity, Infinity, player);
+  const t1 = performance.now();
+  const rKiller = minimaxAb(board, depth, -Infinity, Infinity, player, (b,m,p)=>killer.order(b,m,p), (d,m,p)=>killer.record(d,m,p));
+  const t2 = performance.now();
+  const rHist = minimaxAb(board, depth, -Infinity, Infinity, player, (b,m,p)=>history.order(b,m,p), (d,m,p)=>history.record(d,m,p));
+  const t3 = performance.now();
+  const rNeuro = minimaxAb(board, depth, -Infinity, Infinity, player, neuro.neuroorderOrdering);
+  const t4 = performance.now();
+  return {
+    results: { noorder:rNo, killer:rKiller, history:rHist, neuro:rNeuro },
+    timings: { noorder:t1-t0, killer:t2-t1, history:t3-t2, neuro:t4-t3 },
+  };
+}
+function pickConsensusMove(results){
+  const counts = new Map();
+  METHODS.forEach(m=>{
+    const mv = results[m.key].move;
+    counts.set(mv, (counts.get(mv)||0)+1);
+  });
+  let best=null, bestCount=-1;
+  for(const [mv,ct] of counts.entries()) if(ct>bestCount){ best=mv; bestCount=ct; }
+  return { move:best, agreeCount:bestCount };
+}
+
+function runAiTurn(player){
+  if(state.gameOver) return;
+  state.aiThinking=true;
+  updateClickability();
+  setStatus(playerTag(player)+' is searching the tree…');
+
+  // Slight delay so the "thinking" state is visible before results land
+  setTimeout(()=>{
+    const board = state.board;
+    const moves = getValidMoves(board);
+    const { results, timings } = computeAllMethods(board, player, state.depth);
+    const { move, agreeCount } = pickConsensusMove(results);
+
+    renderRace(results, timings);
+    renderBrain(board, moves, player);
+
+    if(agreeCount===4){
+      agreeBanner.classList.remove('tie');
+      agreeBanner.innerHTML = '<span class="icon">✓</span> All 4 methods agree — column '+move+' is the true minimax-optimal move.';
+    } else {
+      agreeBanner.classList.add('tie');
+      agreeBanner.innerHTML = '<span class="icon">≈</span> '+agreeCount+'/4 agree on column '+move+' — the rest found a different, equally-optimal move (a tie in value).';
+    }
+
+    // cumulative totals
+    METHODS.forEach(m=>{ state.cumulative[m.key]+=results[m.key].nodes; });
+    state.cumulative.moves++;
+    renderLeaderboard();
+
+    // apply the move after the race animation has had a moment to land
+    setTimeout(()=>{
+      state.board = makeMove(board, move, player);
+      state.moveNumber++;
+      logMove(state.moveNumber, player, move, results, agreeCount);
+      renderBoard(null);
+
+      const winner = checkWinner(state.board);
+      if(winner!==null){
+        endGame(winner);
+      } else {
+        state.currentPlayer = player===1?2:1;
+        state.aiThinking=false;
+        advanceTurn();
+      }
+    }, 650);
+  }, 260);
+}
+
+function advanceTurn(){
+  updateClickability();
+  if(state.gameOver) return;
+  if(state.mode==='human'){
+    if(state.currentPlayer===state.humanPlayer){
+      setStatus(playerTag(1)+' your turn — drop a piece.');
+    } else {
+      setStatus(playerTag(2)+' is thinking…');
+      runAiTurn(state.currentPlayer);
+    }
+  } else { // auto mode
+    setStatus(playerTag(state.currentPlayer)+' up next.'+(state.autoPlaying?' Auto-playing…':' Paused.'));
+    if(state.autoPlaying){
+      state.autoTimer = setTimeout(()=>runAiTurn(state.currentPlayer), state.autoSpeed);
+    }
+  }
+}
+
+function endGame(winner){
+  state.gameOver=true;
+  state.aiThinking=false;
+  clearTimeout(state.autoTimer);
+  state.autoPlaying=false;
+  playPauseBtn.textContent='▶ Play';
+  const wc = winner!==0 ? getWinningCells(state.board) : null;
+  renderBoard(wc ? wc.cells : null);
+  showWinBanner(winner);
+  setStatus(winner===0 ? 'Board full — draw.' : (winner===1?playerTag(1):playerTag(2))+' wins the game!');
+  updateClickability();
+}
+
+function onColumnClick(c){
+  if(state.mode!=='human' || state.gameOver || state.aiThinking || state.currentPlayer!==state.humanPlayer) return;
+  const valid = getValidMoves(state.board);
+  if(!valid.includes(c)) return;
+  state.board = makeMove(state.board, c, state.humanPlayer);
+  state.moveNumber++;
+  renderBoard(null);
+  const winner = checkWinner(state.board);
+  if(winner!==null){ endGame(winner); return; }
+  state.currentPlayer = state.humanPlayer===1?2:1;
+  advanceTurn();
+}
+
+/* ---------- Reset / controls wiring ---------- */
+function resetGame(){
+  clearTimeout(state.autoTimer);
+  state.board = createBoard();
+  state.currentPlayer = 1;
+  state.gameOver=false;
+  state.moveNumber=0;
+  state.aiThinking=false;
+  state.autoPlaying=false;
+  state.cumulative = { noorder:0, killer:0, history:0, neuro:0, moves:0 };
+  killer.reset(); history.reset();
+  playPauseBtn.textContent='▶ Play';
+  hideWinBanner();
+  buildBoardDom();
+  renderBoard(null);
+  buildRaceRows();
+  METHODS.forEach(m=>{ document.getElementById('count-'+m.key).textContent='–'; document.getElementById('ms-'+m.key).textContent=''; document.getElementById('fill-'+m.key).style.width='0%'; });
+  agreeBanner.classList.remove('tie');
+  agreeBanner.textContent='Waiting for the first AI move…';
+  brainRows.innerHTML='No prediction yet — make a move to see the network rank columns.';
+  leaderboardEl.innerHTML='No searches run yet this game.';
+  logFeed.innerHTML='';
+  advanceTurn();
+}
+
+modeSeg.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-mode]');
+  if(!btn) return;
+  [...modeSeg.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  state.mode = btn.dataset.mode;
+  autoControls.style.display = state.mode==='auto' ? 'flex' : 'none';
+  clearTimeout(state.autoTimer);
+  state.autoPlaying=false;
+  playPauseBtn.textContent='▶ Play';
+  updateClickability();
+  advanceTurn();
+});
+
+playPauseBtn.addEventListener('click', ()=>{
+  if(state.gameOver) return;
+  state.autoPlaying = !state.autoPlaying;
+  playPauseBtn.textContent = state.autoPlaying ? '⏸ Pause' : '▶ Play';
+  if(state.autoPlaying) advanceTurn();
+  else clearTimeout(state.autoTimer);
+});
+stepBtn.addEventListener('click', ()=>{
+  if(state.gameOver || state.aiThinking) return;
+  clearTimeout(state.autoTimer);
+  state.autoPlaying=false;
+  playPauseBtn.textContent='▶ Play';
+  runAiTurn(state.currentPlayer);
+});
+speedSlider.addEventListener('input', ()=>{
+  state.autoSpeed = parseInt(speedSlider.value,10);
+  speedVal.textContent = (state.autoSpeed/1000).toFixed(1)+'s / move';
+});
+depthSlider.addEventListener('input', ()=>{
+  state.depth = parseInt(depthSlider.value,10);
+  depthVal.textContent = state.depth;
+});
+resetBtn.addEventListener('click', resetGame);
+
+/* ---------- init ---------- */
+resetGame();
+</script>
+</body>
+</html>
